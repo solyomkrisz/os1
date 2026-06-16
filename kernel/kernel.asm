@@ -20,6 +20,10 @@ mov word [0x7E02], 0x7E04    ;next_offset
 read_disk 0x0000, 0x2000, 2, 4, hang       ;is a module so where we load it must be its init fn
 call 0x0000:0x2000
 
+;previous module is at LBA 4, 5
+read_disk 0x0000, 0x3000, 2, 6, hang
+call 0x0000:0x3000
+
 ;module test
 call_draw_rectangle 5, 10, 10, 15, 0x21 ;green rect
 call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
