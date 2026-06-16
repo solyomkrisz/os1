@@ -1,0 +1,9 @@
+BOOT_INFO       equ 0x0500
+BOOT_DRIVE_OFF  equ 0x0000
+
+KERNEL_SEG      equ 0x0000
+KERNEL_OFF      equ 0x1000
+KERNEL_SECTORS  equ 4
+KERNEL_LBA      equ 2
+
+API_TABLE_ENTRY_SIZE    equ 4
