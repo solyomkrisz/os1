@@ -1,0 +1,32 @@
+[bits 16]
+[org 0x1000]
+
+%include "common.inc"
+%include "memory.inc"
+%include "disk.inc"
+
+;stack setup
+cli
+mov ax, 0x9000
+mov ss, ax
+mov sp, 0xFFFE
+sti
+
+;init api table
+mov word [0x7E00], 0x0000    ;next_segment
+mov word [0x7E02], 0x7E04    ;next_offset
+
+;LBA 1 - boot, LBA 2-3 - kernel, next free is LBA 4
+read_disk 0x0000, 0x2000, 2, 4, hang       ;is a module so where we load it must be its init fn
+call 0x0000:0x2000
+
+;module test
+call_draw_rectangle 5, 10, 10, 15, 0x21 ;green rect
+call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
+call_draw_rectangle 30, 10, 5, 30, 0x11 ;blue rect
+
+hang:
+    hlt
+    jmp hang
+
+times 1024 - ($ - $$) db 0
