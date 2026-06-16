@@ -7,6 +7,8 @@ init:
     call init_pit
     sti
 
+    call print_ui
+
     retf
 
 init_ivt:
@@ -55,7 +57,7 @@ tick:
     ;convert remainder to ascii (can only be single digit)
     add dl, '0'
 
-    mov di, 0
+    mov di, 16
     mov ah, 0x0F
     mov al, dl
     mov [es:di], ax
@@ -70,7 +72,32 @@ tick:
 
         iret
 
+print_ui:
+    mov ax, cs
+    mov ds, ax
+    mov si, msg
+
+    mov ax, 0xB800
+    mov es, ax
+    xor di, di
+
+    .next:
+        lodsb
+
+        cmp al, 0
+        je .done
+        
+        mov ah, 0x07
+
+        stosw
+
+        jmp .next
+
+    .done:
+        ret
+
 ticks dw 0
 seconds dw 0
+msg: db 'Timer: ', 0
 
 times 1024 - ($ - $$) db 0
