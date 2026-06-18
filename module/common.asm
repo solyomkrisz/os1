@@ -4,9 +4,19 @@
 %include "memory.inc"
 
 init:
-    ;register putchar
+    ;register movecursor
     mov bx, [0x7E00]
     mov ax, [0x7E02]
+    add bx, ax
+
+    mov word [bx], movecursor
+    mov word [bx+2], 0x0000
+
+    add ax, API_TABLE_ENTRY_SIZE
+    mov word [0x7E02], ax
+
+    ;register putchar
+    mov bx, [0x7E00]
     add bx, ax
 
     mov word [bx], putchar
@@ -27,6 +37,39 @@ init:
 
     retf
 
+;stack:
+;y  <- SP + 8
+;x  <- SP + 6
+;CS <- SP + 4
+;IP <- SP + 2
+;BP <- SP
+;accessing memory through bp, does use a segment implicitly via ss
+;max y: 25
+;max x: 80
+movecursor:
+    push bp
+    mov bp, sp
+
+    mov ax, 0x0000  ;segment which this module is loaded into
+    mov ds, ax
+
+    xor ax, ax
+
+    ;y offset
+    mov al, [bp+8] ;y
+    mov bl, 160
+    mul bl
+    mov [cursor], ax
+
+    ;x offset
+    mov al, [bp+6] ;x
+    mov bl, 2
+    mul bl
+    add [cursor], ax
+
+    pop bp
+    retf 4
+
 putchar:
     push bx
     push ds
@@ -34,7 +77,7 @@ putchar:
 
     mov bl, al          ; save character before AX is changed
 
-    mov ax, 0x0000
+    mov ax, 0x0000      ;segment which this module is loaded into
     mov ds, ax
 
     mov ax, 0xB800
@@ -58,6 +101,16 @@ putchar:
 print_hex16:
     pusha
 
+    push ax
+
+    ;print '0x' which denotes a hex value
+    mov al, '0'
+    call 0x0000:putchar ;print '0'
+    mov al, 'x'
+    call 0x0000:putchar ;print 'x'
+
+    pop ax
+
     mov bx, ax  ;copy value
     mov cx, 4   ;4 hex digits (since register is 16 bits)
 
@@ -77,6 +130,6 @@ print_hex16:
     retf
 
 hex_digits db "0123456789ABCDEF"
-cursor dw 480   ;starts at 4th row
+cursor dw 0
 
 times 1024 - ($ - $$) db 0

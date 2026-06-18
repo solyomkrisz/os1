@@ -33,19 +33,40 @@ call_draw_rectangle 5, 10, 10, 15, 0x21 ;green rect
 call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
 call_draw_rectangle 30, 10, 5, 30, 0x11 ;blue rect
 
-;common.asm module test
-mov al, 'A'
-call far [0x7E08]
-mov al, 'X'
-call far [0x7E08]
-mov al, ':'
-call far [0x7E08]
-mov al, ' '
+;--- common.asm module test ---
+;move cursor to 4th row
+push 3
+push 0
 call far [0x7E08]
 
-;print_hex16 test
-mov ax, [0x7E0C]
+;print '0x7E10'
+mov ax, 0x7E10
+call far [0x7E10]
+;print ':' and ' '
+mov al, ':'
 call far [0x7E0C]
+mov al, ' '
+call far [0x7E0C]
+;print_hex16 test - print whats at 7E10
+mov ax, [0x7E10]
+call far [0x7E10]
+
+;move cursor to 4th row
+push 4
+push 0
+call far [0x7E08]
+
+;print '0x7E08'
+mov ax, 0x7E08
+call far [0x7E10]
+;print ':' and ' '
+mov al, ':'
+call far [0x7E0C]
+mov al, ' '
+call far [0x7E0C]
+;print_hex16 test - print whats at 7E08
+mov ax, [0x7E08]
+call far [0x7E10]
 
 hang:
     hlt
