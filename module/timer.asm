@@ -1,5 +1,4 @@
 [bits 16]
-[org 0x3000]
 
 init:
     cli
@@ -16,7 +15,7 @@ init_ivt:
     mov es, ax
 
     mov word [es:0x08*4], tick
-    mov word [es:0x08*4+2], 0x0000
+    mov word [es:0x08*4+2], cs
 
     ret
 
@@ -36,6 +35,9 @@ tick:
     pusha
     push ds
     push es
+
+    mov ax, 0x3000  ;needed if we load at segment 0x3000
+    mov ds, ax
 
     inc word [ticks]
 
@@ -73,6 +75,8 @@ tick:
         iret
 
 print_ui:
+    push ds
+
     mov ax, cs
     mov ds, ax
     mov si, msg
@@ -94,6 +98,7 @@ print_ui:
         jmp .next
 
     .done:
+        pop ds
         ret
 
 ticks dw 0
