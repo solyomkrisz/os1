@@ -1,6 +1,7 @@
 [bits 16]
 [org 0x4000]
 
+LSEG equ 0x0000
 %include "memory.inc"
 
 init:
@@ -20,6 +21,16 @@ init:
     add bx, ax
 
     mov word [bx], putchar
+    mov word [bx+2], 0x0000
+
+    add ax, API_TABLE_ENTRY_SIZE
+    mov word [0x7E02], ax
+
+    ;register print - should be now at 0x7E10
+    mov bx, [0x7E00]
+    add bx, ax
+
+    mov word [bx], print_stack
     mov word [bx+2], 0x0000
 
     add ax, API_TABLE_ENTRY_SIZE
@@ -97,6 +108,57 @@ putchar:
     pop bx
 
     retf
+
+;push 'H'
+;push 'e'
+;push 'l'
+;push 'l'
+;push 'o'
+;push 5 - num of chars
+;we use far call, so last 2 bytes is address
+
+;stack:
+;'H'
+;'e'
+;'l'
+;'l'
+;'o' <- SP + 8
+;5  <- SP + 6
+;CS <- SP + 4
+;IP <- SP + 2
+;pushed bp
+
+;CALLER MUST CLEAN UP THE STACK!!!
+;add sp, (num of chars + 1) * 2 -> +1 is for the string length 
+print_stack:
+    push bp
+    mov bp, sp
+
+    mov cx, [bp+6]
+
+    mov si, bp
+
+    add si, 8 ;move past pushed bp, IP, CS and length
+    ;at this point si points to the last char of the string
+
+    ;add twice because each char is length 2
+    add si, cx
+    add si, cx
+
+    sub si, 2 ;now si points to the first char of the string
+
+    .loop:
+        mov al, [ss:si]
+        call LSEG:putchar
+    
+        sub si, 2
+
+        dec cx
+        jnz .loop
+
+    .done:
+        pop bp
+        retf
 
 print_hex16:
     pusha
