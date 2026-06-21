@@ -11,7 +11,7 @@ init:
     add bx, ax
 
     mov word [bx], movecursor
-    mov word [bx+2], 0x0000
+    mov word [bx+2], LSEG
 
     add ax, API_TABLE_ENTRY_SIZE
     mov word [0x7E02], ax
@@ -21,17 +21,17 @@ init:
     add bx, ax
 
     mov word [bx], putchar
-    mov word [bx+2], 0x0000
+    mov word [bx+2], LSEG
 
     add ax, API_TABLE_ENTRY_SIZE
     mov word [0x7E02], ax
 
-    ;register print - should be now at 0x7E10
+    ;print_stack - should be now at 0x7E10
     mov bx, [0x7E00]
     add bx, ax
 
     mov word [bx], print_stack
-    mov word [bx+2], 0x0000
+    mov word [bx+2], LSEG
 
     add ax, API_TABLE_ENTRY_SIZE
     mov word [0x7E02], ax
@@ -41,7 +41,7 @@ init:
     add bx, ax
 
     mov word [bx], print_hex16
-    mov word [bx+2], 0x0000
+    mov word [bx+2], LSEG
 
     add ax, API_TABLE_ENTRY_SIZE
     mov word [0x7E02], ax
@@ -61,7 +61,7 @@ movecursor:
     push bp
     mov bp, sp
 
-    mov ax, 0x0000  ;segment which this module is loaded into
+    mov ax, LSEG ;segment which this module is loaded into
     mov ds, ax
 
     xor ax, ax
@@ -88,7 +88,7 @@ putchar:
 
     mov bl, al          ; save character before AX is changed
 
-    mov ax, 0x0000      ;segment which this module is loaded into
+    mov ax, LSEG ;segment which this module is loaded into
     mov ds, ax
 
     mov ax, 0xB800
@@ -109,13 +109,15 @@ putchar:
 
     retf
 
+;USAGE:
 ;push 'H'
 ;push 'e'
 ;push 'l'
 ;push 'l'
 ;push 'o'
-;push 5 - num of chars
-;we use far call, so last 2 bytes is address
+;push 5 ;num of chars
+;call print_stack
+;add sp, 12 ;stack cleanup
 
 ;stack:
 ;'H'
@@ -167,9 +169,9 @@ print_hex16:
 
     ;print '0x' which denotes a hex value
     mov al, '0'
-    call 0x0000:putchar ;print '0'
+    call LSEG:putchar ;print '0'
     mov al, 'x'
-    call 0x0000:putchar ;print 'x'
+    call LSEG:putchar ;print 'x'
 
     pop ax
 
@@ -182,7 +184,7 @@ print_hex16:
 
         mov si, ax
         mov al, [hex_digits + si]
-        call 0x0000:putchar
+        call LSEG:putchar
 
         shl bx, 4   ;move next group into place
 
