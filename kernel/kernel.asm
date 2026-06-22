@@ -45,15 +45,15 @@ call far [0x7E08]
 
 ;print '0x7E04'
 mov ax, 0x7E04
-call far [0x7E14]
+call far [0x7E1C]
 ;print ':' and ' '
 mov al, ':'
-call far [0x7E0C]
+call far [0x7E14]
 mov al, ' '
-call far [0x7E0C]
+call far [0x7E14]
 ;print_hex16 test - print whats at 7E10
 mov ax, [0x7E04]
-call far [0x7E14]
+call far [0x7E1C]
 
 ;move cursor to 4th row
 push 4
@@ -62,15 +62,31 @@ call far [0x7E08]
 
 ;print '0x7E08'
 mov ax, 0x7E08
-call far [0x7E14]
+call far [0x7E1C]
 ;print ':' and ' '
 mov al, ':'
-call far [0x7E0C]
+call far [0x7E14]
 mov al, ' '
-call far [0x7E0C]
+call far [0x7E14]
 ;print_hex16 test - print whats at 7E08
 mov ax, [0x7E08]
-call far [0x7E14]
+call far [0x7E1C]
+
+;move cursor to second row where 'Type here: ' is
+;which is set up in keyboard.asm's init function
+mov ax, 0x0000 ;where api table is (segment)
+mov ds, ax
+
+push 1
+push 11
+call far [0x7E08]
+
+main:
+    ;process things
+    call far [0x7E20] ;kbd_process function
+
+    hlt
+    jmp main
 
 hang:
     hlt

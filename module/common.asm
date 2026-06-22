@@ -5,12 +5,32 @@ LSEG equ 0x0000
 %include "memory.inc"
 
 init:
-    ;register movecursor
+    ;register move_cursor
     mov bx, [0x7E00]
     mov ax, [0x7E02]
     add bx, ax
 
-    mov word [bx], movecursor
+    mov word [bx], move_cursor
+    mov word [bx+2], LSEG
+
+    add ax, API_TABLE_ENTRY_SIZE
+    mov word [0x7E02], ax
+
+    ;register get_cursor
+    mov bx, [0x7E00]
+    add bx, ax
+
+    mov word [bx], get_cursor
+    mov word [bx+2], LSEG
+
+    add ax, API_TABLE_ENTRY_SIZE
+    mov word [0x7E02], ax
+
+    ;register set_cursor
+    mov bx, [0x7E00]
+    add bx, ax
+
+    mov word [bx], set_cursor
     mov word [bx+2], LSEG
 
     add ax, API_TABLE_ENTRY_SIZE
@@ -26,7 +46,7 @@ init:
     add ax, API_TABLE_ENTRY_SIZE
     mov word [0x7E02], ax
 
-    ;print_stack - should be now at 0x7E10
+    ;print_stack - should be now at 0x7E18
     mov bx, [0x7E00]
     add bx, ax
 
@@ -57,7 +77,7 @@ init:
 ;accessing memory through bp, does use a segment implicitly via ss
 ;max y: 25
 ;max x: 80
-movecursor:
+move_cursor:
     push bp
     mov bp, sp
 
@@ -80,6 +100,28 @@ movecursor:
 
     pop bp
     retf 4
+
+;puts cursor position in ax
+get_cursor:
+    mov ax, LSEG
+    mov ds, ax
+
+    mov ax, [cursor]
+
+    retf
+
+;excepts position in ax
+set_cursor:
+    push ax
+
+    mov ax, LSEG
+    mov ds, ax
+
+    pop ax
+
+    mov [cursor], ax
+
+    retf
 
 putchar:
     push bx
