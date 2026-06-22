@@ -1,8 +1,12 @@
 [bits 16]
 [org 0x5000]
 
+LSEG equ 0x0000
+
 init:
     call mask_irq1
+
+    call install_irq1_isr
 
     push 5
     push 0
@@ -32,9 +36,34 @@ init:
     call run_ps2_self_test ;leaves response code in ax
     call far [0x7E14] ;print value of ax
 
+    call disable_ps2_ports
+
     ;returns in ax, so we must keep it
     call init_keyboard
     call print_init_keyb_result
+
+    call unmask_irq1
+
+    ;move cursor
+    push 0
+    push 63
+    call far [0x7E08]
+
+    ;print 'LAST CODE: '
+    push 'L'
+    push 'A'
+    push 'S'
+    push 'T'
+    push ' '
+    push 'C'
+    push 'O'
+    push 'D'
+    push 'E'
+    push ':'
+    push ' '
+    push 11
+    call far [0x7E10]
+    add sp, 24
 
     retf
 
@@ -45,6 +74,13 @@ mask_irq1:
     in al, 0x21 ;read current PIC mask
     or al, 00000010b ;set bit 1 (IRQ1)
     out 0x21, al ;write the updated mask back
+
+    ret
+
+unmask_irq1:
+    in al, 0x21
+    and al, 11111101b
+    out 0x21, al
 
     ret
 
@@ -82,6 +118,27 @@ wait_outp_buf_full:
         loop .loop
 
     ;timeout
+    .failure:
+        mov ax, 0
+        ret
+
+    .success:
+        mov ax, 1
+        ret
+
+;ax = 1 means success, ax = 0 means failure
+flush_outp_buf:
+    mov cx, 10000
+
+    .flush:
+        in al, 0x64
+        test al, 1 ;outp buffer full?
+        jz .success
+
+        in al, 0x60 ;read and discard outp buffer byte
+        
+        loop .flush
+
     .failure:
         mov ax, 0
         ret
@@ -129,6 +186,115 @@ run_ps2_self_test:
 
     .done:
         ret
+
+disable_ps2_ports:
+    call wait_inp_buf_empty
+    cmp ax, 1
+    jne .error
+
+    mov al, 0xAD ;command for disabling first ps2 port
+    out 0x64, al
+
+    call wait_inp_buf_empty
+    cmp ax, 1
+    jne .error
+
+    mov al, 0xA7 ;command for disabling second ps2 port
+    out 0x64, al
+
+    mov ax, 1
+    ret
+
+    .error:
+        mov ax, 0
+        ret
+
+;ax = 1 means success, ax = 0 means error
+enable_ps2_irq1:
+    call wait_inp_buf_empty ;wait for previous command to be completed
+    cmp ax, 1
+    jne .error
+
+    call flush_outp_buf
+    cmp ax, 1
+    jne .error
+
+    mov al, 0x20 ;command for requesting config byte
+    out 0x64, al ;send this command
+
+    call wait_outp_buf_full ;wait for the controller to place this byte into outp buffer
+    cmp ax, 1
+    jne .error
+
+    xor ax, ax ;clear ax, including ah and al
+
+    in al, 0x60 ;read config byte
+    or al, 00000001b ;set first byte (this will enable interrupts for the first port)
+
+    push ax ;save modified config byte
+
+    ;wait for inp buf to be empty before next command
+    call wait_inp_buf_empty
+    cmp ax, 1
+    jne .error
+
+    mov al, 0x60 ;write config byte command
+    out 0x64, al ;send command
+
+    ;wait for command to be consumed
+    call wait_inp_buf_empty
+    cmp ax, 1
+    jne .error
+
+    pop ax ;restore config byte
+
+    out 0x60, al ;send config byte to data register
+
+    mov ax, 1 ;if we get here everything was successful
+    ret
+
+    .error:
+        ;handle error
+        mov ax, 0
+        ret
+
+install_irq1_isr:
+    xor ax, ax
+    mov es, ax
+
+    mov word [es:0x09*4], irq1_isr
+    mov word [es:0x09*4+2], LSEG
+
+    ret
+
+irq1_isr:
+    pusha
+    push ds
+    push es
+
+    mov ax, LSEG
+    mov ds, ax
+
+    ;move cursor
+    push 0
+    push 74
+    call far [0x7E08]
+
+    xor ax, ax
+
+    in al, 0x60 ;read keyboard data
+    mov [scan_code], al
+
+    call far [0x7E14] ;print scancode (value of ax)
+
+    mov al, 0x20
+    out 0x20, al ;send EOI
+
+    pop es
+    pop ds
+    popa
+
+    iret
 
 ;returns ax
 ;ax = 1 means success, ax = 0 means failure
@@ -190,6 +356,10 @@ init_keyboard:
     cmp al, 0xFA ;response should be 0xFA
     jne .error
 
+    call enable_ps2_irq1
+    cmp ax, 1
+    jne .error
+
     ;keyboard is initialized, start polling scan codes
 
     mov ax, 1
@@ -241,4 +411,6 @@ print_init_keyb_result:
 
     ret
 
-times 1024 - ($ - $$) db 0
+scan_code: db 0
+
+times 2048 - ($ - $$) db 0

@@ -33,8 +33,8 @@ call 0x3000:0x0000
 read_disk 0x0000, 0x4000, 2, 8, hang
 call 0x0000:0x4000
 
-;previous module takes uo 8-9 we load this one to 10-11
-read_disk 0x0000, 0x5000, 2, 10, hang
+;previous module takes up 8-9 we load this one to 10-11-12-13
+read_disk 0x0000, 0x5000, 4, 10, hang
 call 0x0000:0x5000
 
 ;--- common.asm module test ---
