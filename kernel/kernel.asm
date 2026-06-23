@@ -20,6 +20,22 @@ in al, dx
 or al, 00100000b
 out dx, al
 
+;clear screen so Bochs and other emulators' initialization messages disappear
+;move this function into a module after API table is replaced by module headers
+mov cx, 2000
+
+mov ax, 0xB800
+mov es, ax
+xor di, di
+
+mov ax, 0x0020
+
+screen_clear_loop:
+    mov [es:di], ax
+    add di, 2
+
+    loop screen_clear_loop
+
 ;stack setup
 cli
 mov ax, 0x9000
@@ -32,6 +48,7 @@ mov word [0x7E00], 0x0000    ;next_segment
 mov word [0x7E02], 0x7E04    ;next_offset
 
 ;LBA 1 - boot, LBA 2-3 - kernel, next free is LBA 4, so we load this one to 4 and 5
+;RECTANGLE.ASM
 read_disk 0x0000, 0x2000, 2, 4, hang       ;is a module so where we load it must be its init fn
 call 0x0000:0x2000
 
@@ -40,17 +57,21 @@ call_draw_rectangle 5, 10, 10, 15, 0x21 ;green rect
 call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
 call_draw_rectangle 30, 10, 5, 30, 0x11 ;blue rect
 
-;previous module is at LBA 4, 5, next free is 6 so we load this to 6 and 7
+;TIMER.ASM - previous module is at LBA 4, 5, next free is 6 so we load this to 6 and 7
 read_disk 0x3000, 0x0000, 2, 6, hang
 call 0x3000:0x0000
 
-;previous module takes up 6 and 7, we load this one to 8 and 9
+;COMMON.ASM - previous module takes up 6 and 7, we load this one to 8 and 9
 read_disk 0x0000, 0x4000, 2, 8, hang
 call 0x0000:0x4000
 
-;previous module takes up 8-9 we load this one to 10-11-12-13
+;KEYBOARD.ASM - previous module takes up 8-9 we load this one to 10-11-12-13
 read_disk 0x0000, 0x5000, 4, 10, hang
 call 0x0000:0x5000
+
+;TERMINAL.ASM - previous module takes up 10-13, so we load this one starting at 14
+read_disk 0x0000, 0x6000, 2, 14, hang
+call 0x0000:0x6000
 
 ;--- common.asm module test ---
 ;move cursor to 3th row

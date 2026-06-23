@@ -44,7 +44,7 @@ tick:
     cmp word [ticks], 18
     jb .done
 
-    mov word [ticks], 0
+    sub word [ticks], 18 ;mov word [ticks], 0
     inc word [seconds]
 
     ;display seconds

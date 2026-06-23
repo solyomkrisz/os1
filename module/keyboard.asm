@@ -506,6 +506,7 @@ kbd_dequeue:
         stc
         ret
 
+;returns the ascii code in al
 kbd_process:
     .loop:
         call kbd_dequeue
@@ -519,8 +520,8 @@ kbd_process:
         jnz .loop
 
         ;treat backspace special
-        cmp al, 0x0E
-        je .backspace
+        ; cmp al, 0x0E
+        ; je .backspace
         
         mov bx, LSEG
         mov ds, bx
@@ -535,22 +536,28 @@ kbd_process:
         mov ds, bx
 
         ;print ascii char with putchar
-        call far [0x7E14]
+        ; call far [0x7E14]
+
+        ;hardcoded receiver
+        ;later make save the pointer to an "active receiver" and call
+        ;the function at that pointer with al = ascii code for char
+        ;this way later multitasking can be easier to implement
+        call far [0x7E24] ;tty_put_char
 
         jmp .loop
 
     ;this code assumes we use vga memory
-    .backspace:
-        call far [0x7E0C] ;common.asm/get_cursor()
-        ;ax now has cursor position
+    ; .backspace:
+    ;     call far [0x7E0C] ;common.asm/get_cursor()
+    ;     ;ax now has cursor position
 
-        ;sub 2 bytes (one position on screen)
-        sub ax, 2
+    ;     ;sub 2 bytes (one position on screen)
+    ;     sub ax, 2
 
-        ;set_cursor expects new position in ax
-        call far [0x7E10] ;common.asm/set_cursor()
+    ;     ;set_cursor expects new position in ax
+    ;     call far [0x7E10] ;common.asm/set_cursor()
 
-        jmp .loop
+    ;     jmp .loop
 
     .done:
         retf
