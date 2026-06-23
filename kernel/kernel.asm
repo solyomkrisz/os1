@@ -5,6 +5,21 @@
 %include "memory.inc"
 %include "disk.inc"
 
+;disable vga text mode cursor
+;it is controller through the CRT controller ports 0x3D4 and 0x3D5
+;notice that the ports are more than 8 bits, so the syntax we used for
+;the in/out instructions until now, won't work (this for example won't
+;work: out 0x3D4, al) because the assembler will truncate it to 8 bits
+;we must use dx for ports above 0xFF
+mov dx, 0x3D4
+mov al, 0x0A
+out dx, al
+
+mov dx, 0x3D5
+in al, dx
+or al, 00100000b
+out dx, al
+
 ;stack setup
 cli
 mov ax, 0x9000
