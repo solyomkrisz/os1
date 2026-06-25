@@ -6,25 +6,22 @@
 
 LSEG equ 0x0000
 
+module_header:
+    dw 2 ;export count - this will be at [module_base]
+
+    export_0:
+        dw init
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_1: ;each entry is 8 bytes
+        dw tty_put_char      ;offset - this will be at [module_base + 2]
+        dw LSEG              ;segment
+        dw tty_put_char_name ;pointer to name
+        dw 0                 ;flags
+
 init:
-    push ds
-
-    xor ax, ax
-    mov ds, ax
-
-    ;register tty_put_char - should be at 7E24
-    mov bx, [0x7E00]
-    mov ax, [0x7E02]
-    add bx, ax
-
-    mov word [bx], tty_put_char
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
-    pop ds
-
     retf
 
 input_buffer_marker: db 0xFF, 0x66, 0xFF ;next byte after 'FF 66 FF' in memory is the first byte of the input buffer
@@ -104,8 +101,11 @@ tty_put_char:
         retf
 
 shell_execute:
+    call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
+
     ret
 
 prompt db '> ', 0
+tty_put_char_name: db 'tty_put_char'
 
 times 1024 - ($ - $$) db 0

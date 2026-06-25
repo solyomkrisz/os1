@@ -51,7 +51,7 @@ init:
     push 58
     call far [0x7E08]
 
-    ;print 'LAST CODE: '
+    ;print 'LAST SCAN CODE: '
     push 'L'
     push 'A'
     push 'S'
@@ -71,26 +71,6 @@ init:
     push 16
     call far [0x7E18]
     add sp, 34
-
-    ;print 'Type here: ' to the second row
-    push 1
-    push 0
-    call far [0x7E08] ;move cursor
-
-    push 'T'
-    push 'y'
-    push 'p'
-    push 'e'
-    push ' '
-    push 'h'
-    push 'e'
-    push 'r'
-    push 'e'
-    push ':'
-    push ' '
-    push 11
-    call far [0x7E18]
-    add sp, 24
 
     ;register kbd_process function
     mov bx, [0x7E00]
@@ -542,7 +522,7 @@ kbd_process:
         ;later make save the pointer to an "active receiver" and call
         ;the function at that pointer with al = ascii code for char
         ;this way later multitasking can be easier to implement
-        call far [0x7E24] ;tty_put_char
+        call far [0x6000+2+8] ;tty_put_char ;+2 skips export count, + (previous entries * 8) selects entry
 
         jmp .loop
 
