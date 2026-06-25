@@ -105,9 +105,17 @@ print_prompt:
     ret
 
 new_line:
+    call far [get_cursor_vec_o] ;ah = x, al = y
+
+    mov ah, 0 ;back to beginning of line
+    inc al
+
+    call far [set_cursor_vec_o] ;already exects data in ax
+
     ret
 
 shell_execute:
+    call new_line
     call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
 
     ret
