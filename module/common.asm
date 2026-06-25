@@ -71,13 +71,15 @@ move_cursor:
     xor ax, ax
 
     ;y offset
-    mov al, [bp+8] ;y
+    mov al, [bp+8] ;y from stack
+    mov byte [cursor_y], al ;save y from stack into mem
     mov bl, 160
     mul bl
     mov [cursor], ax
 
     ;x offset
-    mov al, [bp+6] ;x
+    mov al, [bp+6] ;x from stack
+    mov byte [cursor_x], al ;save x from stack into mem
     mov bl, 2
     mul bl
     add [cursor], ax
@@ -85,7 +87,7 @@ move_cursor:
     pop bp
     retf 4
 
-;puts cursor position in ax
+;returns cursor x in ah, cursor y in al
 get_cursor:
     mov ax, LSEG
     mov ds, ax
@@ -221,5 +223,7 @@ print_hex16:
 
 hex_digits db "0123456789ABCDEF"
 cursor dw 0
+cursor_x db 0
+cursor_y db 0
 
 times 1024 - ($ - $$) db 0

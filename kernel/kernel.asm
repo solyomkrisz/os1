@@ -4,6 +4,7 @@
 %include "common.inc"
 %include "memory.inc"
 %include "disk.inc"
+%include "exports.inc"
 
 ;disable vga text mode cursor
 ;it is controller through the CRT controller ports 0x3D4 and 0x3D5
@@ -77,36 +78,36 @@ read_disk 0x0000, 0x6000, 2, 14, hang
 ;move cursor to 3th row
 push 3
 push 0
-call far [0x4000+2+8]
+call far [move_cursor_o]
 
 ;print '0x7E04'
 mov ax, 0x7E04
-call far [0x4000+2+6*8]
+call far [print_hex16_o]
 ;print ':' and ' '
 mov al, ':'
-call far [0x4000+2+4*8]
+call far [putchar_o]
 mov al, ' '
-call far [0x4000+2+4*8]
+call far [putchar_o]
 ;print_hex16 test - print whats at 7E10
 mov ax, [0x7E04]
-call far [0x4000+2+6*8]
+call far [print_hex16_o]
 
 ;move cursor to 4th row
 push 4
 push 0
-call far [0x4000+2+8]
+call far [move_cursor_o]
 
 ;print '0x7E08'
 mov ax, 0x7E08
-call far [0x4000+2+6*8]
+call far [print_hex16_o]
 ;print ':' and ' '
 mov al, ':'
-call far [0x4000+2+4*8]
+call far [putchar_o]
 mov al, ' '
-call far [0x4000+2+4*8]
+call far [putchar_o]
 ;print_hex16 test - print whats at 7E08
 mov ax, [0x7E08]
-call far [0x4000+2+6*8]
+call far [print_hex16_o]
 
 ;move cursor to second row where 'Type here: ' is
 ;which is set up in keyboard.asm's init function
@@ -115,11 +116,11 @@ mov ds, ax
 
 push 1
 push 11
-call far [0x4000+2+8]
+call far [move_cursor_o]
 
 main:
     ;process things
-    call far [0x5000+2+8] ;kbd_process function - assume ds is 0x0000
+    call far [kbd_process_o] ;kbd_process function - assume ds is 0x0000
 
     hlt
     jmp main

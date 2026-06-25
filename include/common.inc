@@ -1,3 +1,5 @@
+%include "exports.inc"
+
 %macro call_draw_rectangle 5
     push ds
     ; %1=x, %2=y, %3=rows, %4=cols, %5=color
@@ -11,7 +13,7 @@
     mov ax, 0x0000
     mov ds, ax
 
-    call far [0x2000+2+8]   ;given that we load draw_rectangle into the first api table entry
+    call far [draw_rectangle_o]   ;given that we load draw_rectangle into the first api table entry
 
     pop ds
 %endmacro
