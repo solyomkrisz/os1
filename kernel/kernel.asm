@@ -59,7 +59,12 @@ call_draw_rectangle 30, 10, 5, 30, 0x11 ;blue rect
 
 ;TIMER.ASM - previous module is at LBA 4, 5, next free is 6 so we load this to 6 and 7
 read_disk 0x3000, 0x0000, 2, 6, hang
-call 0x3000:0x0000
+;call timer.asm/init()
+push ds
+mov ax, 0x3000
+mov ds, ax
+call far [0x0000+2]
+pop ds
 
 ;COMMON.ASM - previous module takes up 6 and 7, we load this one to 8 and 9
 read_disk 0x0000, 0x4000, 2, 8, hang

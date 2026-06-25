@@ -1,5 +1,16 @@
 [bits 16]
 
+LSEG equ 0x3000
+
+module_header:
+    dw 1 ;num of exports
+
+    export_0:
+        dw init
+        dw LSEG
+        dw 0 ;name of export
+        dw 0 ;flags
+
 init:
     cli
     call init_ivt

@@ -12,11 +12,11 @@ module_header:
     export_0:
         dw init
         dw LSEG
-        dw 0
+        dw init_name
         dw 0
 
     export_1: ;each entry is 8 bytes
-        dw tty_put_char      ;offset - this will be at [module_base + 2]
+        dw tty_put_char      ;offset - this will be at [module_base + 2 + (1*8)]
         dw LSEG              ;segment
         dw tty_put_char_name ;pointer to name
         dw 0                 ;flags
@@ -105,7 +105,9 @@ shell_execute:
 
     ret
 
+init_name: db 'terminal_module_init', 0
+tty_put_char_name: db 'tty_put_char', 0
+
 prompt db '> ', 0
-tty_put_char_name: db 'tty_put_char'
 
 times 1024 - ($ - $$) db 0
