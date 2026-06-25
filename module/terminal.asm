@@ -52,7 +52,7 @@ tty_put_char:
     mov byte [input_buffer+bx], al ;put char into buffer
     inc word [input_length] ;increase length
 
-    call far [0x7E14] ;call put_char
+    call far [0x4000+2+4*8] ;call put_char
 
     jmp .done
 
@@ -73,22 +73,22 @@ tty_put_char:
 
         ;remove last char from screen
         ;first - get current cursor position (its after the last non backspace char)
-        call far [0x7E0C] ;common.asm/get_cursor()
+        call far [0x4000+2+2*8] ;common.asm/get_cursor()
         ;flat cursor position is in ax
         sub ax, 2 ;move it back to pos of last written char
         ;code below actually moves it there
-        call far [0x7E10] ;common.asm/set_cursor()
+        call far [0x4000+2+3*8] ;common.asm/set_cursor()
         push ax ;save this cursor position
 
         mov ax, 0x0020 ;put black color and space char into ax
-        call far [0x7E14] ;call put_char - put this space onto screen which in turn erases the last char
+        call far [0x4000+2+4*8] ;call put_char - put this space onto screen which in turn erases the last char
 
         pop ax ;restore the saved cursor position
         ;below we set the cursor back there because when we
         ;erased the last char by filling its place with a space
         ;we called the put_char function that automatically
         ;advances the cursor
-        call far [0x7E10] ;common.asm/set_cursor()
+        call far [0x4000+2+3*8] ;common.asm/set_cursor()
 
 
         jmp .done

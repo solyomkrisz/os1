@@ -5,6 +5,21 @@
 
 LSEG equ 0x0000
 
+module_header:
+    dw 2
+
+    export_0:
+        dw init
+        dw LSEG
+        dw 0
+        dw 0 ;flags
+    
+    export_1:
+        dw kbd_process
+        dw LSEG
+        dw kbd_process_name
+        dw 0 ;flags
+
 init:
     call mask_irq1
 
@@ -12,7 +27,7 @@ init:
 
     push 5
     push 0
-    call far [0x7E08]
+    call far [0x4000+2+8] ;common.asm/move_cursor()
 
     ;print 'PS/2 SELF-TEST: '
     push 'P'
@@ -32,11 +47,11 @@ init:
     push ':'
     push ' '
     push 16
-    call far [0x7E18]
+    call far [0x4000+2+5*8] ;common.asm/print_stack()
     add sp, 34
 
     call run_ps2_self_test ;leaves response code in ax
-    call far [0x7E1C] ;print value of ax
+    call far [0x4000+2+6*8] ;print value of ax
 
     call disable_ps2_ports
 
@@ -49,7 +64,7 @@ init:
     ;move cursor
     push 0
     push 58
-    call far [0x7E08]
+    call far [0x4000+2+8] ;common.asm/move_cursor()
 
     ;print 'LAST SCAN CODE: '
     push 'L'
@@ -69,20 +84,8 @@ init:
     push ':'
     push ' '
     push 16
-    call far [0x7E18]
+    call far [0x4000+2+5*8] ;common.asm/print_stack()
     add sp, 34
-
-    ;register kbd_process function
-    mov bx, [0x7E00]
-    mov ax, [0x7E02]
-
-    add bx, ax
-
-    mov word [bx], kbd_process
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
 
     retf
 
@@ -195,13 +198,13 @@ run_ps2_self_test:
 
     .failure:
         ;al contains failure code
-        ;call far [0x7E1C] ;print value of ax
+        ;call far [0x4000+2+6*8] ;print value of ax
 
         ;jmp .done
 
     .success:
         ;print the result code
-        ;call far [0x7E1C] ;print value of ax
+        ;call far [0x4000+2+6*8] ;print value of ax
 
     .done:
         ret
@@ -297,26 +300,26 @@ irq1_isr:
     ;we get the current cursor position, then set it to where we want to print
     ;the scan code and later we set it back to the original one
     ;so the actual letters go to the right place
-    call far [0x7E0C] ;common.asm/get_cursor()
+    call far [0x4000+2+2*8] ;common.asm/get_cursor()
     ;flat cursor position is in ax
     push ax ;save old cursor position - later we pop it into bx, as ax will have the code
 
     ;move cursor so we print code after 'LAST SCAN CODE: ' text
     push 0
     push 74
-    call far [0x7E08]
+    call far [0x4000+2+8] ;common.asm/move_cursor()
 
     xor ax, ax
 
     in al, 0x60 ;read keyboard data
 
-    call far [0x7E1C] ;print scancode (value of ax)
+    call far [0x4000+2+6*8] ;print scancode (value of ax)
 
     call kbd_enqueue
 
     ;move cursor back as explained above
     pop ax ;restore cursor position
-    call far [0x7E10] ;common.asm/set_cursor()
+    call far [0x4000+2+3*8] ;common.asm/set_cursor()
 
     mov al, 0x20
     out 0x20, al ;send EOI
@@ -409,7 +412,7 @@ print_init_keyb_result:
     ;move cursor to 6th row
     push 6
     push 0
-    call far [0x7E08]
+    call far [0x4000+2+8] ;common.asm/move_cursor()
 
     ;print 'PS/2 SELF-TEST: '
     push 'K'
@@ -431,14 +434,14 @@ print_init_keyb_result:
     push ':'
     push ' '
     push 18
-    call far [0x7E18]
+    call far [0x4000+2+5*8] ;common.asm/print_stack()
     add sp, 38
 
     ;restore ax for the actual print
     pop ax
 
     ;print ax (result)
-    call far [0x7E1C] ;print value of ax
+    call far [0x4000+2+6*8] ;print value of ax
 
     ret
 
@@ -493,7 +496,7 @@ kbd_process:
         jc .done
 
         ;al has scan code
-        ; call far [0x7E1C] ;print scancode (value of ax)
+        ; call far [0x4000+2+6*8] ;print scancode (value of ax)
 
         ;skip this entry in the queue if break code
         test al, 0x80
@@ -516,7 +519,7 @@ kbd_process:
         mov ds, bx
 
         ;print ascii char with putchar
-        ; call far [0x7E14]
+        ; call far [0x4000+2+4*8]
 
         ;hardcoded receiver
         ;later make save the pointer to an "active receiver" and call
@@ -528,14 +531,14 @@ kbd_process:
 
     ;this code assumes we use vga memory
     ; .backspace:
-    ;     call far [0x7E0C] ;common.asm/get_cursor()
+    ;     call far [0x4000+2+2*8] ;common.asm/get_cursor()
     ;     ;ax now has cursor position
 
     ;     ;sub 2 bytes (one position on screen)
     ;     sub ax, 2
 
     ;     ;set_cursor expects new position in ax
-    ;     call far [0x7E10] ;common.asm/set_cursor()
+    ;     call far [0x4000+2+3*8] ;common.asm/set_cursor()
 
     ;     jmp .loop
 
@@ -553,5 +556,7 @@ ctrl_pressed: db 0
 alt_pressed: db 0
 
 %include "scan_set1_to_ascii.inc"
+
+kbd_process_name: db 'kbd_process', 0
 
 times 2048 - ($ - $$) db 0

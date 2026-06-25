@@ -4,68 +4,52 @@
 LSEG equ 0x0000
 %include "memory.inc"
 
+module_header:
+    dw 7
+
+    export_0:
+        dw init
+        dw LSEG
+        dw 0 ;name
+        dw 0 ;flags
+
+    export_1:
+        dw move_cursor
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_2:
+        dw get_cursor
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_3:
+        dw set_cursor
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_4:
+        dw putchar
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_5:
+        dw print_stack
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_6:
+        dw print_hex16
+        dw LSEG
+        dw 0
+        dw 0
+
 init:
-    ;register move_cursor
-    mov bx, [0x7E00]
-    mov ax, [0x7E02]
-    add bx, ax
-
-    mov word [bx], move_cursor
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
-    ;register get_cursor
-    mov bx, [0x7E00]
-    add bx, ax
-
-    mov word [bx], get_cursor
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
-    ;register set_cursor
-    mov bx, [0x7E00]
-    add bx, ax
-
-    mov word [bx], set_cursor
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
-    ;register putchar
-    mov bx, [0x7E00]
-    add bx, ax
-
-    mov word [bx], putchar
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
-    ;print_stack - should be now at 0x7E18
-    mov bx, [0x7E00]
-    add bx, ax
-
-    mov word [bx], print_stack
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
-    ;register print_hex16
-    mov bx, [0x7E00]
-    add bx, ax
-
-    mov word [bx], print_hex16
-    mov word [bx+2], LSEG
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
     retf
 
 ;stack:

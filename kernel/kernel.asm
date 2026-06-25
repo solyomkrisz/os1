@@ -43,14 +43,9 @@ mov ss, ax
 mov sp, 0xFFFE
 sti
 
-;init api table
-mov word [0x7E00], 0x0000    ;next_segment
-mov word [0x7E02], 0x7E04    ;next_offset
-
 ;LBA 1 - boot, LBA 2-3 - kernel, next free is LBA 4, so we load this one to 4 and 5
 ;RECTANGLE.ASM
 read_disk 0x0000, 0x2000, 2, 4, hang       ;is a module so where we load it must be its init fn
-call 0x0000:0x2000
 
 ;module test
 call_draw_rectangle 5, 10, 10, 15, 0x21 ;green rect
@@ -68,11 +63,11 @@ pop ds
 
 ;COMMON.ASM - previous module takes up 6 and 7, we load this one to 8 and 9
 read_disk 0x0000, 0x4000, 2, 8, hang
-call 0x0000:0x4000
+call far [0x4000+2] ;assume ds is 0x0000
 
 ;KEYBOARD.ASM - previous module takes up 8-9 we load this one to 10-11-12-13
 read_disk 0x0000, 0x5000, 4, 10, hang
-call 0x0000:0x5000
+call far [0x5000+2] ;we assume ds is set to 0x0000
 
 ;TERMINAL.ASM - previous module takes up 10-13, so we load this one starting at 14
 read_disk 0x0000, 0x6000, 2, 14, hang
@@ -82,36 +77,36 @@ read_disk 0x0000, 0x6000, 2, 14, hang
 ;move cursor to 3th row
 push 3
 push 0
-call far [0x7E08]
+call far [0x4000+2+8]
 
 ;print '0x7E04'
 mov ax, 0x7E04
-call far [0x7E1C]
+call far [0x4000+2+6*8]
 ;print ':' and ' '
 mov al, ':'
-call far [0x7E14]
+call far [0x4000+2+4*8]
 mov al, ' '
-call far [0x7E14]
+call far [0x4000+2+4*8]
 ;print_hex16 test - print whats at 7E10
 mov ax, [0x7E04]
-call far [0x7E1C]
+call far [0x4000+2+6*8]
 
 ;move cursor to 4th row
 push 4
 push 0
-call far [0x7E08]
+call far [0x4000+2+8]
 
 ;print '0x7E08'
 mov ax, 0x7E08
-call far [0x7E1C]
+call far [0x4000+2+6*8]
 ;print ':' and ' '
 mov al, ':'
-call far [0x7E14]
+call far [0x4000+2+4*8]
 mov al, ' '
-call far [0x7E14]
+call far [0x4000+2+4*8]
 ;print_hex16 test - print whats at 7E08
 mov ax, [0x7E08]
-call far [0x7E1C]
+call far [0x4000+2+6*8]
 
 ;move cursor to second row where 'Type here: ' is
 ;which is set up in keyboard.asm's init function
@@ -120,11 +115,11 @@ mov ds, ax
 
 push 1
 push 11
-call far [0x7E08]
+call far [0x4000+2+8]
 
 main:
     ;process things
-    call far [0x7E20] ;kbd_process function
+    call far [0x5000+2+8] ;kbd_process function - assume ds is 0x0000
 
     hlt
     jmp main

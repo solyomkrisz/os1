@@ -3,18 +3,24 @@
 
 %include "memory.inc"
 
+LSEG equ 0x0000
+
+module_header:
+    dw 2
+
+    export_0:
+        dw init
+        dw LSEG
+        dw 0
+        dw 0 ;flags
+
+    export_1:
+        dw draw_rectangle
+        dw LSEG
+        dw draw_rectangle_name
+        dw 0
+
 init:
-    mov bx, [0x7E00]
-    mov ax, [0x7E02]
-
-    add bx, ax
-
-    mov word [bx], draw_rectangle
-    mov word [bx+2], 0x0000
-
-    add ax, API_TABLE_ENTRY_SIZE
-    mov word [0x7E02], ax
-
     retf
 
 draw_rectangle:
@@ -76,5 +82,7 @@ draw_rectangle:
         pop bp
         ;ret 10 ;near return only pops IP, leaving the far call's CS stranded on the stack
         retf 10
+
+draw_rectangle_name: db 'draw_rectangle', 0
 
 times 1024 - ($ - $$) db 0
