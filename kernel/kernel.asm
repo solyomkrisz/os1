@@ -76,9 +76,8 @@ read_disk 0x0000, 0x6000, 2, 14, hang
 
 ;--- common.asm module test ---
 ;move cursor to 3th row
-push 3
-push 0
-call far [move_cursor_o]
+mov ax, 0x0003
+call far [set_cursor_vec_o]
 
 ;print '0x7E04'
 mov ax, 0x7E04
@@ -93,9 +92,8 @@ mov ax, [0x7E04]
 call far [print_hex16_o]
 
 ;move cursor to 4th row
-push 4
-push 0
-call far [move_cursor_o]
+mov ax, 0x0004
+call far [set_cursor_vec_o]
 
 ;print '0x7E08'
 mov ax, 0x7E08
@@ -114,9 +112,8 @@ call far [print_hex16_o]
 mov ax, 0x0000 ;where api table is (segment)
 mov ds, ax
 
-push 1
-push 11
-call far [move_cursor_o]
+mov ax, 0x0B01
+call far [set_cursor_vec_o]
 
 main:
     ;process things

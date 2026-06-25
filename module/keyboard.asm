@@ -26,9 +26,8 @@ init:
 
     call install_irq1_isr
 
-    push 5
-    push 0
-    call far [move_cursor_o] ;common.asm/move_cursor()
+    mov ax, 0x0005
+    call far [set_cursor_vec_o] ;common.asm/move_cursor()
 
     ;print 'PS/2 SELF-TEST: '
     push 'P'
@@ -275,14 +274,13 @@ irq1_isr:
     ;we get the current cursor position, then set it to where we want to print
     ;the scan code and later we set it back to the original one
     ;so the actual letters go to the right place
-    call far [get_cursor_o] ;common.asm/get_cursor()
+    call far [get_cursor_flt_o] ;common.asm/get_cursor()
     ;flat cursor position is in ax
     push ax ;save old cursor position - later we pop it into bx, as ax will have the code
 
     ;move cursor so we print code after 'LAST SCAN CODE: ' text
-    push 0
-    push 74
-    call far [move_cursor_o] ;common.asm/move_cursor()
+    mov ax, 0x4A00
+    call far [set_cursor_vec_o] ;common.asm/move_cursor()
 
     xor ax, ax
 
@@ -294,7 +292,7 @@ irq1_isr:
 
     ;move cursor back as explained above
     pop ax ;restore cursor position
-    call far [set_cursor_o] ;common.asm/set_cursor()
+    call far [set_cursor_flt_o] ;common.asm/set_cursor()
 
     mov al, 0x20
     out 0x20, al ;send EOI
@@ -385,9 +383,8 @@ print_init_keyb_result:
     push ax
 
     ;move cursor to 6th row
-    push 6
-    push 0
-    call far [move_cursor_o] ;common.asm/move_cursor()
+    mov ax, 0x0006
+    call far [set_cursor_vec_o] ;common.asm/move_cursor()
 
     ;print 'PS/2 SELF-TEST: '
     push 'K'
@@ -503,19 +500,6 @@ kbd_process:
         call far [tty_put_char_o] ;tty_put_char ;+2 skips export count, + (previous entries * 8) selects entry
 
         jmp .loop
-
-    ;this code assumes we use vga memory
-    ; .backspace:
-    ;     call far [get_cursor_o] ;common.asm/get_cursor()
-    ;     ;ax now has cursor position
-
-    ;     ;sub 2 bytes (one position on screen)
-    ;     sub ax, 2
-
-    ;     ;set_cursor expects new position in ax
-    ;     call far [set_cursor_o] ;common.asm/set_cursor()
-
-    ;     jmp .loop
 
     .done:
         retf

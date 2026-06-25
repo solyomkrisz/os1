@@ -5,7 +5,7 @@ LSEG equ 0x0000
 %include "memory.inc"
 
 module_header:
-    dw 7
+    dw 8
 
     export_0:
         dw init
@@ -14,36 +14,42 @@ module_header:
         dw 0 ;flags
 
     export_1:
-        dw move_cursor
+        dw get_cursor_vec
         dw LSEG
         dw 0
         dw 0
 
     export_2:
-        dw get_cursor
+        dw set_cursor_vec
         dw LSEG
         dw 0
         dw 0
 
     export_3:
-        dw set_cursor
+        dw get_cursor_flt
         dw LSEG
         dw 0
         dw 0
 
     export_4:
-        dw putchar
+        dw set_cursor_flt
         dw LSEG
         dw 0
         dw 0
 
     export_5:
-        dw print_stack
+        dw putchar
         dw LSEG
         dw 0
         dw 0
 
     export_6:
+        dw print_stack
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_7:
         dw print_hex16
         dw LSEG
         dw 0
@@ -52,43 +58,46 @@ module_header:
 init:
     retf
 
-;stack:
-;y  <- SP + 8
-;x  <- SP + 6
-;CS <- SP + 4
-;IP <- SP + 2
-;BP <- SP
-;accessing memory through bp, does use a segment implicitly via ss
-;max y: 25
-;max x: 80
-move_cursor:
-    push bp
-    mov bp, sp
+;AH = x , AL = y
+get_cursor_vec:
+    mov ax, [cursor]
 
-    mov ax, LSEG ;segment which this module is loaded into
-    mov ds, ax
+    xor dx, dx
+    mov cx, 160
+    div cx      ;AX = y, DX = cursor % 160
 
-    xor ax, ax
+    mov bx, dx
+    shr bx, 1   ;more efficient way of dividing by 2
+
+    mov ah, bl  ;AH = x
+    ;AL already has y
+
+    retf
+
+;expects x in ah, y in al
+set_cursor_vec:
+    mov bx, LSEG ;segment which this module is loaded into
+    mov ds, bx
+
+    ;save x and y into bx - BX HAS NOW THE COORDS
+    mov bx, ax
 
     ;y offset
-    mov al, [bp+8] ;y from stack
-    mov byte [cursor_y], al ;save y from stack into mem
-    mov bl, 160
-    mul bl
+    mov al, bl ;y from bl
+    mov cl, 160
+    mul cl
     mov [cursor], ax
 
     ;x offset
-    mov al, [bp+6] ;x from stack
-    mov byte [cursor_x], al ;save x from stack into mem
-    mov bl, 2
-    mul bl
+    mov al, bh ;x bh
+    mov cl, 2
+    mul cl
     add [cursor], ax
 
-    pop bp
-    retf 4
+    retf
 
-;returns cursor x in ah, cursor y in al
-get_cursor:
+;returns cursor position in ax
+get_cursor_flt:
     mov ax, LSEG
     mov ds, ax
 
@@ -97,7 +106,7 @@ get_cursor:
     retf
 
 ;excepts position in ax
-set_cursor:
+set_cursor_flt:
     push ax
 
     mov ax, LSEG
@@ -223,7 +232,5 @@ print_hex16:
 
 hex_digits db "0123456789ABCDEF"
 cursor dw 0
-cursor_x db 0
-cursor_y db 0
 
 times 1024 - ($ - $$) db 0
