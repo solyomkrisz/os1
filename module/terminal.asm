@@ -16,7 +16,13 @@ module_header:
         dw init_name
         dw 0
 
-    export_1: ;each entry is 8 bytes
+    export_1:
+        dw open
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_2: ;each entry is 8 bytes
         dw tty_put_char      ;offset - this will be at [module_base + 2 + (1*8)]
         dw LSEG              ;segment
         dw tty_put_char_name ;pointer to name
@@ -53,6 +59,7 @@ tty_put_char:
     mov byte [input_buffer+bx], al ;put char into buffer
     inc word [input_length] ;increase length
 
+    mov ah, 0x07
     call far [putchar_o] ;call put_char
 
     jmp .done
@@ -102,21 +109,68 @@ tty_put_char:
         retf
 
 print_prompt:
-    ret
+    push ds
+    push es
+
+    mov ax, 0xB800
+    mov es, ax
+
+    call far [get_cursor_vec_o] ;ah = x, al = y
+    ;we care about y
+
+    ;setup for stosw
+    xor ah, ah
+    mov bx, 160
+    mul bx
+    ;ax now has the offset to the start of the newly created row (given we call this fn after calling new_line)
+    mov di, ax
+
+    mov ax, 0xB800
+    mov es, ax
+
+    ;setup for lodsb
+    mov ax, LSEG
+    mov ds, ax
+    mov si, prompt
+
+    .next:
+        lodsb
+
+        cmp al, 0
+        je .done
+
+        mov ah, 0x07 ;color (char in al)
+
+        stosw
+
+        jmp .next
+
+    .done:
+        pop es
+        pop ds
+
+        ret
 
 new_line:
     call far [get_cursor_vec_o] ;ah = x, al = y
 
-    mov ah, 0 ;back to beginning of line
+    mov ah, 2 ;back to beginning of line
     inc al
 
     call far [set_cursor_vec_o] ;already exects data in ax
 
     ret
 
+open:
+    call new_line
+    call print_prompt
+
+    retf
+
 shell_execute:
     call new_line
-    call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
+    call print_prompt
+    mov word [input_length], 0
 
     ret
 

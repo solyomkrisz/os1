@@ -118,23 +118,19 @@ set_cursor_flt:
 
     retf
 
+;expects color and char in AX
 putchar:
     push bx
     push ds
     push es
 
-    mov bl, al          ; save character before AX is changed
+    mov bx, LSEG ;segment which this module is loaded into
+    mov ds, bx
 
-    mov ax, LSEG ;segment which this module is loaded into
-    mov ds, ax
-
-    mov ax, 0xB800
-    mov es, ax
+    mov bx, 0xB800
+    mov es, bx
 
     mov di, [cursor]
-
-    mov ah, 0x07
-    mov al, bl          ; restore character
 
     mov [es:di], ax
 
@@ -168,7 +164,8 @@ putchar:
 ;pushed bp
 
 ;CALLER MUST CLEAN UP THE STACK!!!
-;add sp, (num of chars + 1) * 2 -> +1 is for the string length 
+;add sp, (num of chars + 1) * 2 -> +1 is for the string length
+;also expects bg and fg color in AH
 print_stack:
     push bp
     mov bp, sp
@@ -199,12 +196,19 @@ print_stack:
         pop bp
         retf
 
+;expects colors (bg, fg) in DH
 print_hex16:
     pusha
 
     push ax
 
     ;print '0x' which denotes a hex value
+    mov ah, dh
+
+    ;change foreground to gray (always)
+    and ah, 0xF0
+    or ah, 0x07
+
     mov al, '0'
     call LSEG:putchar ;print '0'
     mov al, 'x'
@@ -220,6 +224,7 @@ print_hex16:
         shr ax, 12  ;keep top bit group (4 bit)
 
         mov si, ax
+        mov ah, dh
         mov al, [hex_digits + si]
         call LSEG:putchar
 

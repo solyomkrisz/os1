@@ -71,7 +71,7 @@ tick:
     add dl, '0'
 
     mov di, 16
-    mov ah, 0x0F
+    mov ah, 0x1F
     mov al, dl
     mov [es:di], ax
 
@@ -102,7 +102,7 @@ print_ui:
         cmp al, 0
         je .done
         
-        mov ah, 0x07
+        mov ah, 0x17
 
         stosw
 

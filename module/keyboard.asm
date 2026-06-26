@@ -30,34 +30,36 @@ init:
     call far [set_cursor_vec_o] ;common.asm/move_cursor()
 
     ;print 'PS/2 SELF-TEST: '
-    push 'P'
-    push 'S'
-    push '/'
-    push '2'
-    push ' '
-    push 'S'
-    push 'E'
-    push 'L'
-    push 'F'
-    push '-'
-    push 'T'
-    push 'E'
-    push 'S'
-    push 'T'
-    push ':'
-    push ' '
-    push 16
-    call far [print_stack_o] ;common.asm/print_stack()
-    add sp, 34
+    ; push 'P'
+    ; push 'S'
+    ; push '/'
+    ; push '2'
+    ; push ' '
+    ; push 'S'
+    ; push 'E'
+    ; push 'L'
+    ; push 'F'
+    ; push '-'
+    ; push 'T'
+    ; push 'E'
+    ; push 'S'
+    ; push 'T'
+    ; push ':'
+    ; push ' '
+    ; push 16
+    ; mov ah, 0x07 ;color for printing
+    ; call far [print_stack_o] ;common.asm/print_stack()
+    ; add sp, 34
 
     call run_ps2_self_test ;leaves response code in ax
-    call far [print_hex16_o] ;print value of ax
+    ; mov dh, 0x0F
+    ; call far [print_hex16_o] ;print value of ax
 
     call disable_ps2_ports
 
     ;returns in ax, so we must keep it
     call init_keyboard
-    call print_init_keyb_result
+    ; call print_init_keyb_result
 
     call unmask_irq1
 
@@ -172,12 +174,14 @@ run_ps2_self_test:
 
     .failure:
         ;al contains failure code
+        ;mov dh, 0x0F
         ;call far [print_hex16_o] ;print value of ax
 
         ;jmp .done
 
     .success:
         ;print the result code
+        ;mov dh, 0x07
         ;call far [print_hex16_o] ;print value of ax
 
     .done:
@@ -286,6 +290,7 @@ irq1_isr:
 
     in al, 0x60 ;read keyboard data
 
+    mov dh, 0x1F ;color for print
     call far [print_hex16_o] ;print scancode (value of ax)
 
     call kbd_enqueue
@@ -406,6 +411,7 @@ print_init_keyb_result:
     push ':'
     push ' '
     push 18
+    mov ah, 0x07
     call far [print_stack_o] ;common.asm/print_stack()
     add sp, 38
 
@@ -413,6 +419,7 @@ print_init_keyb_result:
     pop ax
 
     ;print ax (result)
+    mov dh, 0x0F
     call far [print_hex16_o] ;print value of ax
 
     ret
@@ -468,6 +475,7 @@ kbd_process:
         jc .done
 
         ;al has scan code
+        ; mov dh, 0x0F
         ; call far [print_hex16_o] ;print scancode (value of ax)
 
         ;skip this entry in the queue if break code
@@ -491,6 +499,7 @@ kbd_process:
         mov ds, bx
 
         ;print ascii char with putchar
+        ; mov ah, 0x07
         ; call far [putchar_o]
 
         ;hardcoded receiver

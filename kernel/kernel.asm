@@ -37,6 +37,22 @@ screen_clear_loop:
 
     loop screen_clear_loop
 
+;give color to first row
+mov cx, 80 ;80 cols/row
+
+mov ax, 0xB800
+mov es, ax
+xor di, di
+
+mov ah, 0x10
+mov al, 0x20
+
+draw_top_row:
+    mov [es:di], ax
+    add di, 2
+
+    loop draw_top_row
+
 ;stack setup
 cli
 mov ax, 0x9000
@@ -49,9 +65,9 @@ sti
 read_disk 0x0000, 0x2000, 2, 4, hang       ;is a module so where we load it must be its init fn
 
 ;module test
-call_draw_rectangle 5, 10, 10, 15, 0x21 ;green rect
-call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
-call_draw_rectangle 30, 10, 5, 30, 0x11 ;blue rect
+; call_draw_rectangle 5, 10, 10, 15, 0x21 ;green rect
+; call_draw_rectangle 2, 4, 5, 20, 0x36 ;cyan rect
+; call_draw_rectangle 30, 10, 5, 30, 0x11 ;blue rect
 
 ;TIMER.ASM - previous module is at LBA 4, 5, next free is 6 so we load this to 6 and 7
 read_disk 0x3000, 0x0000, 2, 6, hang
@@ -76,44 +92,50 @@ read_disk 0x0000, 0x6000, 2, 14, hang
 
 ;--- common.asm module test ---
 ;move cursor to 3th row
-mov ax, 0x0003
+; mov ax, 0x0003
+; call far [set_cursor_vec_o]
+
+; ;print '0x7E04'
+; mov ax, 0x7E04
+; mov dh, 0x0F
+; call far [print_hex16_o]
+; ;print ':' and ' '
+; mov ah, 0x07
+; mov al, ':'
+; call far [putchar_o]
+; mov ah, 0x07
+; mov al, ' '
+; call far [putchar_o]
+; ;print_hex16 test - print whats at 7E10
+; mov ax, [0x7E04]
+; mov dh, 0x0F
+; call far [print_hex16_o]
+
+; ;move cursor to 4th row
+; mov ax, 0x0004
+; call far [set_cursor_vec_o]
+
+; ;print '0x7E08'
+; mov ax, 0x7E08
+; mov dh, 0x0F
+; call far [print_hex16_o]
+; ;print ':' and ' '
+; mov ah, 0x07
+; mov al, ':'
+; call far [putchar_o]
+; mov ah, 0x07
+; mov al, ' '
+; call far [putchar_o]
+; ;print_hex16 test - print whats at 7E08
+; mov ax, [0x7E08]
+; mov dh, 0x0F
+; call far [print_hex16_o]
+
+;move cursor to 1st row
+mov ax, 0x0001
 call far [set_cursor_vec_o]
 
-;print '0x7E04'
-mov ax, 0x7E04
-call far [print_hex16_o]
-;print ':' and ' '
-mov al, ':'
-call far [putchar_o]
-mov al, ' '
-call far [putchar_o]
-;print_hex16 test - print whats at 7E10
-mov ax, [0x7E04]
-call far [print_hex16_o]
-
-;move cursor to 4th row
-mov ax, 0x0004
-call far [set_cursor_vec_o]
-
-;print '0x7E08'
-mov ax, 0x7E08
-call far [print_hex16_o]
-;print ':' and ' '
-mov al, ':'
-call far [putchar_o]
-mov al, ' '
-call far [putchar_o]
-;print_hex16 test - print whats at 7E08
-mov ax, [0x7E08]
-call far [print_hex16_o]
-
-;move cursor to second row where 'Type here: ' is
-;which is set up in keyboard.asm's init function
-mov ax, 0x0000 ;where api table is (segment)
-mov ds, ax
-
-mov ax, 0x0B01
-call far [set_cursor_vec_o]
+call far [terminal_open_o]
 
 main:
     ;process things
