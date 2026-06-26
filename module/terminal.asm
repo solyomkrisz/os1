@@ -28,14 +28,105 @@ module_header:
         dw tty_put_char_name ;pointer to name
         dw 0                 ;flags
 
+    export_3:
+        dw register_command
+        dw LSEG
+        dw 0
+        dw 0
+
+;to init command table (where the old api table was)
 init:
+    ;register the first command
+    push cls_cmd_name ;cmd name offset
+    push LSEG ;cmd name segment
+    push cls ;cmd handler offset
+    push LSEG ;cmd handler segment
+    push 0 ;flags
+    push 0 ;help str offset
+    push 0 ;help str segment
+    call LSEG:register_command
+
     retf
 
 input_buffer_marker: db 0xFF, 0x66, 0xFF ;next byte after 'FF 66 FF' in memory is the first byte of the input buffer
-input_buffer: times 256 db 0
+input_buffer: times 256 db 0 ;last byte is the null terminator
 
 input_length_marker: db 0xFF, 0x77, 0xFF
 input_length dw 0
+
+;points to the next available entry in the table
+cmd_table_next_offset: dw 0x7E00
+cmd_table_next_segment: dw 0x0000
+cmd_table_cmd_count: dw 0
+
+;name offset            18
+;name segment           16
+;handler offset         14
+;handler segment        12
+;flags                  10
+;help string offset     8
+;help string segment    6
+;CS       <- SP + 4
+;IP       <- SP + 2 
+;saved bp <- SP
+register_command:
+    push bp
+    mov bp, sp
+    push ds
+    push es
+
+    mov ax, LSEG
+    mov ds, ax
+
+    mov ax, [cmd_table_next_segment]
+    mov es, ax
+    mov bx, [cmd_table_next_offset]
+
+    ;save command name (first 4 bytes)
+    mov ax, [bp+18] ;name offset
+    mov [es:bx], ax
+    mov ax, [bp+16] ;name segment
+    mov [es:bx+2], ax
+
+    ;save handler (second 4 bytes)
+    mov ax, [bp+14] ;handler offset
+    mov [es:bx+4], ax
+    mov ax, [bp+12] ;handler segment
+    mov [es:bx+6], ax
+
+    ;save flags (2 bytes)
+    mov ax, [bp+10] ;flags
+    mov [es:bx+8], ax
+
+    ;save help string (4 bytes)
+    mov ax, [bp+8] ;help string offset
+    mov [es:bx+10], ax
+    mov ax, [bp+6] ;help string segment
+    mov [es:bx+12], ax
+
+    ;add padding (2 bytes)
+    mov word [es:bx+14], 0
+
+    ;
+    ;increase cmd_table_next_offset
+    ;
+    add word [cmd_table_next_offset], 16
+
+    ;
+    ;increase command count
+    ;
+    inc word [cmd_table_cmd_count]
+
+    pop es
+    pop ds
+    pop bp
+
+    retf 14
+
+find_command:
+    mov cx, [cmd_table_cmd_count]
+
+    retf
 
 ;expects char in al
 tty_put_char:
@@ -97,7 +188,6 @@ tty_put_char:
         ;we called the put_char function that automatically
         ;advances the cursor
         call far [set_cursor_flt_o]
-
 
         jmp .done
 
@@ -167,16 +257,49 @@ open:
 
     retf
 
+print_inp_buf:
+    ;lodsb setup
+    mov ax, LSEG
+    mov ds, ax ;also needed for mem access
+    mov si, input_buffer
+
+    mov cx, [input_length]
+
+    .next:
+        lodsb
+        
+        cmp cx, 0
+        jle .done
+
+        dec cx
+
+        mov ah, 0x0F
+        call far [putchar_o]
+
+        jmp .next
+
+    .done:
+        ret
+
 shell_execute:
+    call new_line
+    call print_inp_buf
     call new_line
     call print_prompt
     mov word [input_length], 0
 
     ret
 
+;handlers for commands registered by this module
+cls:
+    retf
+
 init_name: db 'terminal_module_init', 0
 tty_put_char_name: db 'tty_put_char', 0
 
 prompt db '> ', 0
+
+;data for commands registered by this module
+cls_cmd_name: db 'cls', 0
 
 times 1024 - ($ - $$) db 0

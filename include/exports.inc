@@ -14,5 +14,7 @@ print_hex16_o      equ 0x4000+2+7*8
 kbd_process_o   equ 0x5000+2+1*8
 
 ;terminal.asm
-terminal_open_o equ 0x6000+2+1*8
-tty_put_char_o  equ 0x6000+2+2*8
+terminal_init_o     equ 0x6000+2+0*8
+terminal_open_o     equ 0x6000+2+1*8
+tty_put_char_o      equ 0x6000+2+2*8
+register_command_o  equ 0x6000+2+3*8
