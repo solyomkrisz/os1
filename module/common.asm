@@ -5,7 +5,7 @@ LSEG equ 0x0000
 %include "memory.inc"
 
 module_header:
-    dw 8
+    dw 9
 
     export_0:
         dw init
@@ -51,6 +51,12 @@ module_header:
 
     export_7:
         dw print_hex16
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_8:
+        dw print_str
         dw LSEG
         dw 0
         dw 0
@@ -234,6 +240,29 @@ print_hex16:
 
     popa
     retf
+
+;string must be null terminated
+;uses lodsb and putchar
+;lodsb uses ds:si
+;fn expects segment in ax, offset in bx
+;and color data in cl
+print_str:
+    mov ds, ax
+    mov si, bx
+
+    .next:
+        lodsb
+
+        cmp al, 0
+        je .done
+
+        mov ah, cl
+        call LSEG:putchar
+
+        jmp .next
+
+    .done:
+        retf
 
 hex_digits db "0123456789ABCDEF"
 cursor dw 0

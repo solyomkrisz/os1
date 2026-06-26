@@ -131,10 +131,6 @@ call far [terminal_init_o] ;we assume ds is set to 0x0000
 ; mov dh, 0x0F
 ; call far [print_hex16_o]
 
-;move cursor to 1st row
-mov ax, 0x0001
-call far [set_cursor_vec_o]
-
 call far [terminal_open_o]
 
 main:

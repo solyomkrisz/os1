@@ -55,6 +55,8 @@ input_length_marker: db 0xFF, 0x77, 0xFF
 input_length dw 0
 
 ;points to the next available entry in the table
+cmd_table_start_offset: dw 0x7E00
+cmd_table_start_segment: dw 0x0000
 cmd_table_next_offset: dw 0x7E00
 cmd_table_next_segment: dw 0x0000
 cmd_table_cmd_count: dw 0
@@ -123,10 +125,80 @@ register_command:
 
     retf 14
 
-find_command:
+find_and_run_cmd:
     mov cx, [cmd_table_cmd_count]
 
-    retf
+    ;ds:si - input_buffer
+    ;es:di - command name from table
+
+    ;setting up ds
+    mov ax, LSEG
+    mov ds, ax
+
+    ;setting up es:di
+    mov ax, [cmd_table_start_segment]
+    mov es, ax
+    mov bx, [cmd_table_start_offset] ;es:bx = current table entry
+
+    .loop:
+        ;setting up si - reset for each comparison
+        mov si, input_buffer
+
+        mov di, [es:bx] ;load name offset from entry
+        mov ax, [es:bx+2] ;load name segment from entry
+        push es ;save table segment - es:bx must be preserved
+        mov es, ax ;now es:di - actual name string
+
+        .compare:
+            mov al, [ds:si]
+            mov ah, [es:di]
+
+            cmp al, ah
+            jne .no_match
+
+            cmp al, 0
+            je .match
+
+            inc si
+            inc di
+            jmp .compare
+
+        .no_match:
+            pop es ;restore es to table segment
+            add bx, 16 ;advance to next entry
+            loop .loop
+
+    .not_found:
+        call new_line
+
+        ;print 'Unknown command.'
+        mov ax, common_module_segment
+        mov ds, ax
+
+        mov ax, LSEG
+        mov bx, cmd_not_found
+        mov cl, 0x0F
+        call far [print_str_o]
+
+        retf
+
+    .match:
+        pop es ;restore es to table segment
+        ;handler offset at [es:bx+4], segment at [es:bx+6]
+
+        ;when match we push onto the stack the CS and IP
+        ;which is popped of by retf
+        ;CS:IP points to the handler so this trick
+        ;calls the handler
+        ;the handler must have a retf which will pop off
+        ;2 bytes - this must be from where we called
+        ;the find_command function, so we must call
+        ;the find_command function like call SEG:OFF (far call)
+        mov ax, [es:bx+6]
+        push ax
+        mov ax, [es:bx+4]
+        push ax
+        retf
 
 ;expects char in al
 tty_put_char:
@@ -156,6 +228,8 @@ tty_put_char:
     jmp .done
 
     .enter:
+        mov bx, [input_length]
+        mov byte [input_buffer+bx], 0 ;null terminate
         call shell_execute
         jmp .done
 
@@ -252,6 +326,10 @@ new_line:
     ret
 
 open:
+    ;move cursor to 1st row
+    mov ax, 0x0001
+    call far [set_cursor_vec_o]
+
     call new_line
     call print_prompt
 
@@ -282,22 +360,45 @@ print_inp_buf:
         ret
 
 shell_execute:
-    call new_line
-    call print_inp_buf
+    call LSEG:find_and_run_cmd
     call new_line
     call print_prompt
+
     mov word [input_length], 0
 
     ret
 
 ;handlers for commands registered by this module
 cls:
+    mov ax, 0xB800
+    mov es, ax
+    mov di, 160 ;start from the beginning of the 2nd row
+    ;leave first row as it is since for now its a header like stuff
+
+    mov cx, 1920 ;24 rows out of 25
+    mov ax, 0x0020
+
+    .clear_screen:
+        mov [es:di], ax
+        add di, 2
+
+        loop .clear_screen
+
+    ;move cursor to 1st row
+    mov ax, 0x0001
+    call far [set_cursor_vec_o]
+
+    ;call new_line and print_prompt is done by
+    ;the shell_execute function after the handler
+    ;has run
+
     retf
 
 init_name: db 'terminal_module_init', 0
 tty_put_char_name: db 'tty_put_char', 0
 
 prompt db '> ', 0
+cmd_not_found db 'Unknown command.', 0
 
 ;data for commands registered by this module
 cls_cmd_name: db 'cls', 0
