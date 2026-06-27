@@ -449,7 +449,7 @@ print_cmd_table_header:
     push 'D'
     push ' '
     push 9
-    mov ah, 0xFF
+    mov ah, 0x7F
     call far [print_stack_o]
     add sp, 20
 
@@ -469,7 +469,7 @@ print_cmd_table_header:
     push ' '
     push ' '
     push 13
-    mov ah, 0xFF
+    mov ah, 0x7F
     call far [print_stack_o]
     add sp, 28
 
@@ -478,14 +478,13 @@ print_cmd_table_header:
     push ' '
     push 'F'
     push 'L'
-    push 'A'
     push 'G'
     push 'S'
     push ' '
-    push 7
-    mov ah, 0xFF
+    push 6
+    mov ah, 0x7F
     call far [print_stack_o]
-    add sp, 16
+    add sp, 14
 
     call print_tab
 
@@ -503,7 +502,7 @@ print_cmd_table_header:
     push ' '
     push ' '
     push 13
-    mov ah, 0xFF
+    mov ah, 0x7F
     call far [print_stack_o]
     add sp, 28
 
@@ -512,6 +511,7 @@ print_cmd_table_header:
 show_cmd_table:
     call new_line
     call print_cmd_table_header
+    call new_line
     call new_line
 
     mov cx, [cmd_table_cmd_count]
@@ -523,26 +523,37 @@ show_cmd_table:
     .loop:
         push cx
 
-        ;temp
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push ' '
-        push 12
-        call far [print_stack_o]
-        add sp, 26
+        ;
+        ;print command
+        ;
+        mov ax, [ds:bx+2] ;name segment
+        mov cx, [ds:bx] ;name offset
+        push bx
+        mov bx, cx ;because print_str needs offset in bx
+        mov cl, 0x0F
+        call far [print_str_o]
 
+        ;ax has the length of command name
+        mov cx, 12
+        sub cx, ax ;cx has number of spaces needed
+
+        jle .after_padding
+
+        .padding_loop:
+            push cx
+
+            mov al, ' '
+            mov ah, 0x00
+            call far [putchar_o]
+
+            pop cx
+            loop .padding_loop
+
+        .after_padding:
         ;
         ;print segment:offset of handler
         ;
+        pop bx
         mov ax, [ds:bx+6] ;handler segment
         push bx
         mov dh, 0x0F
@@ -597,7 +608,8 @@ show_cmd_table:
         add bx, 16
 
         pop cx
-        loop .loop
+        dec cx
+        jnz .loop
 
     retf
 

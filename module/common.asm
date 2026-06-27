@@ -246,11 +246,16 @@ print_hex16:
 ;lodsb uses ds:si
 ;fn expects segment in ax, offset in bx
 ;and color data in cl
+;returns length in ax
 print_str:
     mov ds, ax
     mov si, bx
 
+    xor ax, ax ;for length
+
     .next:
+        push ax ;save length
+
         lodsb
 
         cmp al, 0
@@ -259,9 +264,13 @@ print_str:
         mov ah, cl
         call LSEG:putchar
 
+        pop ax
+        inc ax ;increase length
+
         jmp .next
 
     .done:
+        pop ax
         retf
 
 hex_digits db "0123456789ABCDEF"
