@@ -87,7 +87,7 @@ read_disk 0x0000, 0x5000, 4, 10, hang
 call far [0x5000+2] ;we assume ds is set to 0x0000
 
 ;TERMINAL.ASM - previous module takes up 10-13, so we load this one starting at 14
-read_disk 0x0000, 0x6000, 2, 14, hang
+read_disk 0x0000, 0x6000, 4, 14, hang
 call far [terminal_init_o] ;we assume ds is set to 0x0000
 
 ;--- common.asm module test ---

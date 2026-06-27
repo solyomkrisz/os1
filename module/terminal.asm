@@ -46,6 +46,24 @@ init:
     push 0 ;help str segment
     call LSEG:register_command
 
+    push hi_cmd_name
+    push LSEG
+    push hi
+    push LSEG
+    push 0
+    push 0
+    push 0
+    call LSEG:register_command
+
+    push show_cmd_table_cmd_name
+    push LSEG
+    push show_cmd_table
+    push LSEG
+    push 0
+    push 0
+    push 0
+    call LSEG:register_command
+
     retf
 
 input_buffer_marker: db 0xFF, 0x66, 0xFF ;next byte after 'FF 66 FF' in memory is the first byte of the input buffer
@@ -394,6 +412,195 @@ cls:
 
     retf
 
+hi:
+    call new_line
+
+    mov ah, 0x6F
+    push ' '
+    push 'H'
+    push 'i'
+    push '!'
+    push ' '
+    push 5
+    call far [print_stack_o]
+    add sp, 12
+
+    retf
+
+print_tab:
+    push ' '
+    push ' '
+    push ' '
+    push 3
+    mov ah, 0x00
+    call far [print_stack_o]
+    add sp, 8
+
+    ret
+
+print_cmd_table_header:
+    push ' '
+    push 'C'
+    push 'O'
+    push 'M'
+    push 'M'
+    push 'A'
+    push 'N'
+    push 'D'
+    push ' '
+    push 9
+    mov ah, 0xFF
+    call far [print_stack_o]
+    add sp, 20
+
+    call print_tab
+
+    push ' '
+    push ' '
+    push ' '
+    push 'A'
+    push 'D'
+    push 'D'
+    push 'R'
+    push 'E'
+    push 'S'
+    push 'S'
+    push ' '
+    push ' '
+    push ' '
+    push 13
+    mov ah, 0xFF
+    call far [print_stack_o]
+    add sp, 28
+
+    call print_tab
+
+    push ' '
+    push 'F'
+    push 'L'
+    push 'A'
+    push 'G'
+    push 'S'
+    push ' '
+    push 7
+    mov ah, 0xFF
+    call far [print_stack_o]
+    add sp, 16
+
+    call print_tab
+
+    push ' '
+    push ' '
+    push ' '
+    push 'H'
+    push 'E'
+    push 'L'
+    push 'P'
+    push ' '
+    push 'A'
+    push 'T'
+    push ' '
+    push ' '
+    push ' '
+    push 13
+    mov ah, 0xFF
+    call far [print_stack_o]
+    add sp, 28
+
+    ret
+
+show_cmd_table:
+    call new_line
+    call print_cmd_table_header
+    call new_line
+
+    mov cx, [cmd_table_cmd_count]
+
+    mov ax, [cmd_table_start_segment]
+    mov ds, ax
+    mov bx, [cmd_table_start_offset]
+
+    .loop:
+        push cx
+
+        ;temp
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push ' '
+        push 12
+        call far [print_stack_o]
+        add sp, 26
+
+        ;
+        ;print segment:offset of handler
+        ;
+        mov ax, [ds:bx+6] ;handler segment
+        push bx
+        mov dh, 0x0F
+        call far [print_hex16_o]
+
+        mov al, ':'
+        mov ah, 0x0F
+        call far [putchar_o]
+
+        pop bx
+        mov ax, [ds:bx+4] ;handler offset
+        push bx
+        mov dh, 0x0F
+        call far [print_hex16_o]
+
+        call print_tab ;print tab
+
+        ;
+        ;print flags
+        ;
+        pop bx
+        mov ax, [ds:bx+8]
+        push bx
+        mov dh, 0x0F
+        call far [print_hex16_o]
+
+        call print_tab ;print tab
+
+        ;
+        ;print help at
+        ;
+        pop bx
+        mov ax, [ds:bx+10]
+        push bx
+        mov dh, 0x0F
+        call far [print_hex16_o]
+
+        mov al, ':'
+        mov ah, 0x0F
+        call far [putchar_o]
+
+        pop bx
+        mov ax, [ds:bx+12]
+        push bx
+        mov dh, 0x0F
+        call far [print_hex16_o]
+
+        call new_line
+
+        ;move to next entry
+        pop bx
+        add bx, 16
+
+        pop cx
+        loop .loop
+
+    retf
+
 init_name: db 'terminal_module_init', 0
 tty_put_char_name: db 'tty_put_char', 0
 
@@ -402,5 +609,7 @@ cmd_not_found db 'Unknown command.', 0
 
 ;data for commands registered by this module
 cls_cmd_name: db 'cls', 0
+hi_cmd_name: db 'hi', 0
+show_cmd_table_cmd_name: db 'scmdt', 0
 
-times 1024 - ($ - $$) db 0
+times 2048 - ($ - $$) db 0
