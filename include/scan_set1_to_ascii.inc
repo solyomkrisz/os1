@@ -42,7 +42,7 @@ scan_set1_to_ascii:
     db 'l'        ;26
     db ';'        ;27
     db 39         ;28 '
-    db '`'        ;29
+    db '0'        ;29 originally it was set to '`'
     db 0          ;2A Left Shift
     db '\'        ;2B
     

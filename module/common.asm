@@ -5,7 +5,7 @@ LSEG equ 0x0000
 %include "memory.inc"
 
 module_header:
-    dw 9
+    dw 10
 
     export_0:
         dw init
@@ -56,6 +56,12 @@ module_header:
         dw 0
 
     export_8:
+        dw print_hex8
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_9:
         dw print_str
         dw LSEG
         dw 0
@@ -175,6 +181,7 @@ putchar:
 print_stack:
     push bp
     mov bp, sp
+    push si ;must be low mov bp,sp so we don't need to recalc the offsets (bp+6 like stuffs)
 
     mov cx, [bp+6]
 
@@ -199,7 +206,9 @@ print_stack:
         jnz .loop
 
     .done:
+        pop si
         pop bp
+
         retf
 
 ;expects colors (bg, fg) in DH
@@ -231,7 +240,7 @@ print_hex16:
 
         mov si, ax
         mov ah, dh
-        mov al, [hex_digits + si]
+        mov al, [hex_digits+si]
         call LSEG:putchar
 
         shl bx, 4   ;move next group into place
@@ -241,6 +250,56 @@ print_hex16:
     popa
     retf
 
+;expects colors (bg, fg) in DH
+;prints whats in al
+print_hex8:
+    pusha
+    push ds
+    push ax ;because we first print '0x'
+
+    ;print '0x' which denotes a hex value
+    mov ah, dh
+
+    ;change foreground to gray (always)
+    and ah, 0xF0
+    or ah, 0x07
+
+    mov al, '0'
+    call LSEG:putchar ;print '0'
+    mov al, 'x'
+    call LSEG:putchar ;print 'x'
+
+    pop ax
+
+    mov cx, 2 ;because al consists of 2 bit groups (1 group is 4 bits)
+
+    ;move the value from ax to bx
+    ;because ax will be changed either way because color needs to be in ah
+    mov bx, ax
+
+    ;for mem access in the loop
+    mov ax, LSEG
+    mov ds, ax
+
+    .next:
+        xor ah, ah
+        mov al, bl
+        shr al, 4
+
+        mov si, ax
+        mov ah, dh
+        mov al, [hex_digits+si]
+        call LSEG:putchar
+
+        shl bx, 4
+
+        loop .next
+
+    pop ds
+    popa
+
+    retf
+
 ;string must be null terminated
 ;uses lodsb and putchar
 ;lodsb uses ds:si
@@ -248,6 +307,7 @@ print_hex16:
 ;and color data in cl
 ;returns length in ax
 print_str:
+    push ds
     mov ds, ax
     mov si, bx
 
@@ -271,6 +331,7 @@ print_str:
 
     .done:
         pop ax
+        pop ds
         retf
 
 hex_digits db "0123456789ABCDEF"

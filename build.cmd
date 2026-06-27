@@ -34,9 +34,13 @@ echo Building terminal module...
 wsl bash -c "nasm -I include/ -f bin module/terminal.asm -o terminal.bin"
 if errorlevel 1 goto error
 
+echo Building memory module...
+wsl bash -c "nasm -I include/ -f bin module/memory.asm -o memory.bin"
+if errorlevel 1 goto error
+
 echo.
 echo Combining binaries into ekms.img...
-wsl bash -c "cat boot.bin kernel.bin rectangle.bin timer.bin common.bin keyboard.bin terminal.bin > ekms.img"
+wsl bash -c "cat boot.bin kernel.bin rectangle.bin timer.bin common.bin keyboard.bin terminal.bin memory.bin > ekms.img"
 
 if errorlevel 1 goto error
 

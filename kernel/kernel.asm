@@ -90,46 +90,14 @@ call far [0x5000+2] ;we assume ds is set to 0x0000
 read_disk 0x0000, 0x6000, 4, 14, hang
 call far [terminal_init_o] ;we assume ds is set to 0x0000
 
-;--- common.asm module test ---
-;move cursor to 3th row
-; mov ax, 0x0003
-; call far [set_cursor_vec_o]
-
-; ;print '0x7E04'
-; mov ax, 0x7E04
-; mov dh, 0x0F
-; call far [print_hex16_o]
-; ;print ':' and ' '
-; mov ah, 0x07
-; mov al, ':'
-; call far [putchar_o]
-; mov ah, 0x07
-; mov al, ' '
-; call far [putchar_o]
-; ;print_hex16 test - print whats at 7E10
-; mov ax, [0x7E04]
-; mov dh, 0x0F
-; call far [print_hex16_o]
-
-; ;move cursor to 4th row
-; mov ax, 0x0004
-; call far [set_cursor_vec_o]
-
-; ;print '0x7E08'
-; mov ax, 0x7E08
-; mov dh, 0x0F
-; call far [print_hex16_o]
-; ;print ':' and ' '
-; mov ah, 0x07
-; mov al, ':'
-; call far [putchar_o]
-; mov ah, 0x07
-; mov al, ' '
-; call far [putchar_o]
-; ;print_hex16 test - print whats at 7E08
-; mov ax, [0x7E08]
-; mov dh, 0x0F
-; call far [print_hex16_o]
+;MEMORY.ASM - previous module is at LBA 14-15-16-17, next free is 18
+read_disk 0x1000, 0x0000, 2, 18, hang
+;call memory.asm/init()
+push ds
+mov ax, 0x1000
+mov ds, ax
+call far [0x0000+2]
+pop ds
 
 call far [terminal_open_o]
 

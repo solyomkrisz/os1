@@ -17,7 +17,7 @@ init:
     call init_pit
     sti
 
-    call print_ui
+    ; call print_ui
 
     retf
 
@@ -70,7 +70,8 @@ tick:
     ;convert remainder to ascii (can only be single digit)
     add dl, '0'
 
-    mov di, 16
+    ; mov di, 16
+    mov di, 144
     mov ah, 0x1F
     mov al, dl
     mov [es:di], ax

@@ -8,7 +8,7 @@
 LSEG equ 0x0000
 
 module_header:
-    dw 2 ;export count - this will be at [module_base]
+    dw 6 ;export count - this will be at [module_base]
 
     export_0:
         dw init
@@ -30,6 +30,18 @@ module_header:
 
     export_3:
         dw register_command
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_4:
+        dw new_line
+        dw LSEG
+        dw 0
+        dw 0
+
+    export_5:
+        dw print_tab
         dw LSEG
         dw 0
         dw 0
@@ -58,6 +70,15 @@ init:
     push show_cmd_table_cmd_name
     push LSEG
     push show_cmd_table
+    push LSEG
+    push 0
+    push 0
+    push 0
+    call LSEG:register_command
+
+    push help_cmd_name
+    push LSEG
+    push help
     push LSEG
     push 0
     push 0
@@ -187,7 +208,7 @@ find_and_run_cmd:
             loop .loop
 
     .not_found:
-        call new_line
+        call LSEG:new_line
 
         ;print 'Unknown command.'
         mov ax, common_module_segment
@@ -341,14 +362,24 @@ new_line:
 
     call far [set_cursor_vec_o] ;already exects data in ax
 
-    ret
+    retf
 
 open:
+    ;print title
+    ;move cursor to 0th row
+    mov ax, 0x0000
+    call far [set_cursor_vec_o]
+
+    mov ax, LSEG
+    mov bx, module_name
+    mov cl, 0x1F
+    call far [print_str_o]
+
     ;move cursor to 1st row
     mov ax, 0x0001
     call far [set_cursor_vec_o]
 
-    call new_line
+    call LSEG:new_line
     call print_prompt
 
     retf
@@ -379,7 +410,7 @@ print_inp_buf:
 
 shell_execute:
     call LSEG:find_and_run_cmd
-    call new_line
+    call LSEG:new_line
     call print_prompt
 
     mov word [input_length], 0
@@ -413,7 +444,7 @@ cls:
     retf
 
 hi:
-    call new_line
+    call LSEG:new_line
 
     mov ah, 0x6F
     push ' '
@@ -436,7 +467,7 @@ print_tab:
     call far [print_stack_o]
     add sp, 8
 
-    ret
+    retf
 
 print_cmd_table_header:
     push ' '
@@ -453,7 +484,7 @@ print_cmd_table_header:
     call far [print_stack_o]
     add sp, 20
 
-    call print_tab
+    call LSEG:print_tab
 
     push ' '
     push ' '
@@ -473,7 +504,7 @@ print_cmd_table_header:
     call far [print_stack_o]
     add sp, 28
 
-    call print_tab
+    call LSEG:print_tab
 
     push ' '
     push 'F'
@@ -486,7 +517,7 @@ print_cmd_table_header:
     call far [print_stack_o]
     add sp, 14
 
-    call print_tab
+    call LSEG:print_tab
 
     push ' '
     push ' '
@@ -509,10 +540,10 @@ print_cmd_table_header:
     ret
 
 show_cmd_table:
-    call new_line
+    call LSEG:new_line
     call print_cmd_table_header
-    call new_line
-    call new_line
+    call LSEG:new_line
+    call LSEG:new_line
 
     mov cx, [cmd_table_cmd_count]
 
@@ -569,7 +600,7 @@ show_cmd_table:
         mov dh, 0x0F
         call far [print_hex16_o]
 
-        call print_tab ;print tab
+        call LSEG:print_tab ;print tab
 
         ;
         ;print flags
@@ -580,7 +611,7 @@ show_cmd_table:
         mov dh, 0x0F
         call far [print_hex16_o]
 
-        call print_tab ;print tab
+        call LSEG:print_tab ;print tab
 
         ;
         ;print help at
@@ -601,7 +632,7 @@ show_cmd_table:
         mov dh, 0x0F
         call far [print_hex16_o]
 
-        call new_line
+        call LSEG:new_line
 
         ;move to next entry
         pop bx
@@ -613,6 +644,18 @@ show_cmd_table:
 
     retf
 
+;when we enter this function
+;input_buffer is still clear
+;so what we might do is that we cut off the 'help '
+;prefix of the command, then run the fun_and_run_command
+;again, with the newly update input_buffer data
+;and somehow make it execute the help function of the command
+;or we might just make help a string that this prints
+help:
+    retf
+
+module_name: db 'TERMINAL', 0
+
 init_name: db 'terminal_module_init', 0
 tty_put_char_name: db 'tty_put_char', 0
 
@@ -623,5 +666,6 @@ cmd_not_found db 'Unknown command.', 0
 cls_cmd_name: db 'cls', 0
 hi_cmd_name: db 'hi', 0
 show_cmd_table_cmd_name: db 'scmdt', 0
+help_cmd_name: db 'help', 0
 
 times 2048 - ($ - $$) db 0
